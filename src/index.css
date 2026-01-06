@@ -4,106 +4,106 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Natural Healing Design System - Sage Green, Earthy Brown, Cream */
+/* Thai Clinic Design System - Pink Theme */
 
 @layer base {
   :root {
-    /* Natural Healing Palette */
-    --background: 40 30% 96%;
-    --foreground: 25 30% 15%;
+    /* Pink Theme Palette */
+    --background: 350 30% 97%;
+    --foreground: 350 30% 15%;
 
-    --card: 40 25% 98%;
-    --card-foreground: 25 30% 15%;
+    --card: 350 25% 99%;
+    --card-foreground: 350 30% 15%;
 
-    --popover: 40 25% 98%;
-    --popover-foreground: 25 30% 15%;
+    --popover: 350 25% 99%;
+    --popover-foreground: 350 30% 15%;
 
-    /* Sage Green Primary */
-    --primary: 142 35% 35%;
-    --primary-foreground: 40 30% 98%;
+    /* Pink Primary */
+    --primary: 340 65% 55%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Cream/Beige Secondary */
-    --secondary: 35 30% 90%;
-    --secondary-foreground: 25 30% 20%;
+    /* Light Pink Secondary */
+    --secondary: 350 40% 94%;
+    --secondary-foreground: 350 30% 25%;
 
-    /* Earthy Muted */
-    --muted: 35 20% 92%;
-    --muted-foreground: 25 15% 45%;
+    /* Soft Muted */
+    --muted: 350 20% 94%;
+    --muted-foreground: 350 15% 45%;
 
-    /* Warm Brown Accent */
-    --accent: 25 45% 45%;
-    --accent-foreground: 40 30% 98%;
+    /* Rose Accent */
+    --accent: 330 60% 50%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 35 20% 85%;
-    --input: 35 20% 88%;
-    --ring: 142 35% 35%;
+    --border: 350 20% 88%;
+    --input: 350 20% 90%;
+    --ring: 340 65% 55%;
 
     --radius: 0.75rem;
 
     /* Custom Colors */
-    --sage: 142 35% 35%;
-    --sage-light: 142 30% 90%;
-    --sage-dark: 142 35% 25%;
-    --earth: 25 45% 35%;
-    --earth-light: 25 35% 85%;
-    --cream: 40 30% 96%;
-    --cream-dark: 35 25% 88%;
+    --sage: 340 65% 55%;
+    --sage-light: 350 40% 94%;
+    --sage-dark: 340 65% 40%;
+    --earth: 330 50% 40%;
+    --earth-light: 350 35% 90%;
+    --cream: 350 30% 97%;
+    --cream-dark: 350 25% 92%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-    --success: 142 50% 40%;
+    --success: 160 50% 40%;
     --success-foreground: 0 0% 100%;
 
     /* Sidebar */
-    --sidebar-background: 142 35% 25%;
-    --sidebar-foreground: 40 30% 95%;
-    --sidebar-primary: 40 30% 98%;
-    --sidebar-primary-foreground: 142 35% 25%;
-    --sidebar-accent: 142 30% 35%;
-    --sidebar-accent-foreground: 40 30% 95%;
-    --sidebar-border: 142 25% 20%;
-    --sidebar-ring: 142 40% 50%;
+    --sidebar-background: 340 65% 40%;
+    --sidebar-foreground: 350 30% 98%;
+    --sidebar-primary: 350 30% 98%;
+    --sidebar-primary-foreground: 340 65% 40%;
+    --sidebar-accent: 340 50% 50%;
+    --sidebar-accent-foreground: 350 30% 98%;
+    --sidebar-border: 340 50% 30%;
+    --sidebar-ring: 340 65% 60%;
   }
 
   .dark {
-    --background: 25 25% 10%;
-    --foreground: 40 25% 95%;
+    --background: 350 20% 10%;
+    --foreground: 350 20% 95%;
 
-    --card: 25 20% 12%;
-    --card-foreground: 40 25% 95%;
+    --card: 350 15% 12%;
+    --card-foreground: 350 20% 95%;
 
-    --popover: 25 20% 12%;
-    --popover-foreground: 40 25% 95%;
+    --popover: 350 15% 12%;
+    --popover-foreground: 350 20% 95%;
 
-    --primary: 142 40% 45%;
-    --primary-foreground: 25 25% 10%;
+    --primary: 340 60% 55%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 25 20% 18%;
-    --secondary-foreground: 40 25% 90%;
+    --secondary: 350 15% 18%;
+    --secondary-foreground: 350 20% 90%;
 
-    --muted: 25 15% 20%;
-    --muted-foreground: 35 15% 60%;
+    --muted: 350 10% 20%;
+    --muted-foreground: 350 15% 60%;
 
-    --accent: 25 40% 50%;
-    --accent-foreground: 40 30% 98%;
+    --accent: 330 55% 55%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 60% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 25 15% 20%;
-    --input: 25 15% 22%;
-    --ring: 142 40% 45%;
+    --border: 350 10% 20%;
+    --input: 350 10% 22%;
+    --ring: 340 60% 55%;
 
-    --sidebar-background: 25 25% 8%;
-    --sidebar-foreground: 40 25% 95%;
-    --sidebar-primary: 142 40% 45%;
-    --sidebar-primary-foreground: 25 25% 10%;
-    --sidebar-accent: 25 20% 15%;
-    --sidebar-accent-foreground: 40 25% 95%;
-    --sidebar-border: 25 15% 15%;
-    --sidebar-ring: 142 40% 45%;
+    --sidebar-background: 350 20% 8%;
+    --sidebar-foreground: 350 20% 95%;
+    --sidebar-primary: 340 60% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 350 15% 15%;
+    --sidebar-accent-foreground: 350 20% 95%;
+    --sidebar-border: 350 10% 15%;
+    --sidebar-ring: 340 60% 55%;
   }
 }
 
