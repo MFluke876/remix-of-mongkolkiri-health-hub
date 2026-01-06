@@ -1,18 +1,21 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
-import { Leaf, Heart, Shield } from 'lucide-react';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { Heart, Stethoscope, User } from "lucide-react";
+
+type UserRole = 'doctor' | 'patient' | null;
 
 const Auth = () => {
   const navigate = useNavigate();
   const { signIn, signUp } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<UserRole>(null);
 
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [signupForm, setSignupForm] = useState({ email: '', password: '', fullName: '' });
@@ -56,78 +59,140 @@ const Auth = () => {
     setLoading(false);
   };
 
-  return (
-    <div className="min-h-screen bg-background flex">
-      {/* Left Side - Decorative */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-primary to-sage-dark relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyek0zNiAxNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-30"></div>
-        
-        <div className="relative z-10 flex flex-col justify-center px-12 text-primary-foreground">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-primary-foreground/20 flex items-center justify-center backdrop-blur-sm">
-              <Leaf className="w-9 h-9 text-primary-foreground" />
+  const handlePatientClick = () => {
+    navigate('/patient-register');
+  };
+
+  // Role selection screen
+  if (!selectedRole) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-background to-pink-100 p-4">
+        <div className="w-full max-w-2xl">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <Heart className="h-12 w-12 text-primary" />
             </div>
-            <div>
-              <h1 className="text-3xl font-display font-bold">มงคลคีรี</h1>
-              <p className="text-primary-foreground/80">คลินิกแพทย์แผนไทย</p>
-            </div>
+            <h1 className="text-3xl font-display font-bold text-foreground mb-2">
+              คลินิกแพทย์แผนไทย
+            </h1>
+            <p className="text-muted-foreground">
+              กรุณาเลือกบทบาทของคุณ
+            </p>
           </div>
-          
-          <h2 className="text-4xl font-display font-bold leading-tight mb-6">
-            ระบบบริหารจัดการ<br/>คลินิกแพทย์แผนไทย
-          </h2>
-          
-          <p className="text-lg text-primary-foreground/80 mb-10 leading-relaxed">
-            บูรณาการภูมิปัญญาดั้งเดิมเข้ากับเทคโนโลยีสมัยใหม่<br/>
-            เพื่อการดูแลสุขภาพที่ครบวงจร
-          </p>
-          
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 text-primary-foreground/90">
-              <div className="w-10 h-10 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
-                <Heart className="w-5 h-5" />
-              </div>
-              <span>ดูแลผู้ป่วยด้วยใจ</span>
-            </div>
-            <div className="flex items-center gap-4 text-primary-foreground/90">
-              <div className="w-10 h-10 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
-                <Shield className="w-5 h-5" />
-              </div>
-              <span>ปลอดภัย เชื่อถือได้</span>
-            </div>
+
+          {/* Role Selection Cards */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Doctor Card */}
+            <Card 
+              className="cursor-pointer hover:border-primary hover:shadow-lg transition-all duration-300 group"
+              onClick={() => setSelectedRole('doctor')}
+            >
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                  <Stethoscope className="h-10 w-10 text-primary" />
+                </div>
+                <CardTitle className="text-xl font-display">แพทย์/เจ้าหน้าที่</CardTitle>
+                <CardDescription>
+                  เข้าสู่ระบบเพื่อจัดการคิวและข้อมูลผู้ป่วย
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                  เข้าสู่ระบบ
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Patient Card */}
+            <Card 
+              className="cursor-pointer hover:border-primary hover:shadow-lg transition-all duration-300 group"
+              onClick={handlePatientClick}
+            >
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                  <User className="h-10 w-10 text-primary" />
+                </div>
+                <CardTitle className="text-xl font-display">ผู้ป่วย</CardTitle>
+                <CardDescription>
+                  ลงทะเบียนเพื่อเข้ารับการรักษา
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                  ลงทะเบียนผู้ป่วย
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
+    );
+  }
 
-      {/* Right Side - Auth Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+  // Doctor login/signup form
+  return (
+    <div className="min-h-screen flex">
+      {/* Left Side - Decorative */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary to-primary/80 p-12 flex-col justify-between relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-20 w-40 h-40 border-2 border-white rounded-full"></div>
+          <div className="absolute bottom-32 right-16 w-32 h-32 border-2 border-white rounded-full"></div>
+          <div className="absolute top-1/2 left-1/3 w-24 h-24 border-2 border-white rounded-full"></div>
+        </div>
+        
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-6">
+            <Heart className="h-10 w-10 text-primary-foreground" />
+            <h1 className="text-2xl font-display font-bold text-primary-foreground">
+              คลินิกแพทย์แผนไทย
+            </h1>
+          </div>
+        </div>
+        
+        <div className="relative z-10">
+          <blockquote className="text-xl text-primary-foreground/90 italic mb-4">
+            "การรักษาที่ดีที่สุด คือการดูแลด้วยหัวใจ"
+          </blockquote>
+          <p className="text-primary-foreground/70">— ภูมิปัญญาแพทย์แผนไทย</p>
+        </div>
+      </div>
+
+      {/* Right Side - Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md">
-          {/* Mobile Header */}
-          <div className="lg:hidden text-center mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => setSelectedRole(null)}
+            className="mb-6 text-muted-foreground hover:text-foreground"
+          >
+            ← กลับ
+          </Button>
+
+          <div className="lg:hidden mb-8 text-center">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-                <Leaf className="w-7 h-7 text-primary-foreground" />
-              </div>
-              <div className="text-left">
-                <h1 className="text-xl font-display font-bold text-foreground">มงคลคีรี</h1>
-                <p className="text-sm text-muted-foreground">คลินิกแพทย์แผนไทย</p>
-              </div>
+              <Heart className="h-8 w-8 text-primary" />
             </div>
+            <h1 className="text-2xl font-display font-bold text-foreground">
+              คลินิกแพทย์แผนไทย
+            </h1>
           </div>
 
-          <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm">
-            <CardHeader className="text-center pb-2">
-              <CardTitle className="text-2xl font-display">ยินดีต้อนรับ</CardTitle>
-              <CardDescription>เข้าสู่ระบบเพื่อจัดการคลินิก</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="login" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="login">เข้าสู่ระบบ</TabsTrigger>
-                  <TabsTrigger value="signup">ลงทะเบียน</TabsTrigger>
-                </TabsList>
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="login">เข้าสู่ระบบ</TabsTrigger>
+              <TabsTrigger value="signup">ลงทะเบียนบัญชี</TabsTrigger>
+            </TabsList>
 
-                <TabsContent value="login">
+            <TabsContent value="login">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl font-display">เข้าสู่ระบบ</CardTitle>
+                  <CardDescription>
+                    เข้าสู่ระบบด้วยบัญชีแพทย์/เจ้าหน้าที่
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="login-email">อีเมล</Label>
@@ -138,7 +203,6 @@ const Auth = () => {
                         value={loginForm.email}
                         onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
                         required
-                        className="h-11"
                       />
                     </div>
                     <div className="space-y-2">
@@ -150,16 +214,25 @@ const Auth = () => {
                         value={loginForm.password}
                         onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                         required
-                        className="h-11"
                       />
                     </div>
-                    <Button type="submit" className="w-full h-11 font-medium" disabled={loading}>
+                    <Button type="submit" className="w-full" disabled={loading}>
                       {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
                     </Button>
                   </form>
-                </TabsContent>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-                <TabsContent value="signup">
+            <TabsContent value="signup">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl font-display">ลงทะเบียนบัญชี</CardTitle>
+                  <CardDescription>
+                    สร้างบัญชีใหม่สำหรับแพทย์/เจ้าหน้าที่
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
                   <form onSubmit={handleSignup} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="signup-name">ชื่อ-นามสกุล</Label>
@@ -170,7 +243,6 @@ const Auth = () => {
                         value={signupForm.fullName}
                         onChange={(e) => setSignupForm({ ...signupForm, fullName: e.target.value })}
                         required
-                        className="h-11"
                       />
                     </div>
                     <div className="space-y-2">
@@ -182,7 +254,6 @@ const Auth = () => {
                         value={signupForm.email}
                         onChange={(e) => setSignupForm({ ...signupForm, email: e.target.value })}
                         required
-                        className="h-11"
                       />
                     </div>
                     <div className="space-y-2">
@@ -194,21 +265,16 @@ const Auth = () => {
                         value={signupForm.password}
                         onChange={(e) => setSignupForm({ ...signupForm, password: e.target.value })}
                         required
-                        className="h-11"
                       />
                     </div>
-                    <Button type="submit" className="w-full h-11 font-medium" disabled={loading}>
+                    <Button type="submit" className="w-full" disabled={loading}>
                       {loading ? 'กำลังลงทะเบียน...' : 'ลงทะเบียน'}
                     </Button>
                   </form>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            ระบบบริหารจัดการคลินิก MCMS v1.0
-          </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
