@@ -13,7 +13,9 @@ import Patients from "./pages/Patients";
 import Queue from "./pages/Queue";
 import NotFound from "./pages/NotFound";
 import PatientLinkPage from "./pages/PatientLinkPage";
+import PatientSignup from "./pages/PatientSignup";
 import PatientDashboard from "./pages/patient/PatientDashboard";
+import PatientProfile from "./pages/patient/PatientProfile";
 import PatientVisitHistory from "./pages/patient/PatientVisitHistory";
 import PatientVisitDetail from "./pages/patient/PatientVisitDetail";
 import PatientMedicationHistory from "./pages/patient/PatientMedicationHistory";
@@ -78,6 +80,7 @@ const AppRoutes = () => {
       <Route path="/auth" element={user ? <Navigate to="/" replace /> : <Auth />} />
       <Route path="/patient-register" element={<PatientRegister />} />
       <Route path="/patient-link" element={<PatientLinkPage />} />
+      <Route path="/patient-signup" element={<PatientSignup />} />
       
       {/* Staff routes */}
       <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
@@ -88,6 +91,7 @@ const AppRoutes = () => {
       
       {/* Patient routes */}
       <Route path="/patient" element={<PatientProtectedRoute><PatientDashboard /></PatientProtectedRoute>} />
+      <Route path="/patient/profile" element={<PatientProtectedRoute><PatientProfile /></PatientProtectedRoute>} />
       <Route path="/patient/visits" element={<PatientProtectedRoute><PatientVisitHistory /></PatientProtectedRoute>} />
       <Route path="/patient/visits/:id" element={<PatientProtectedRoute><PatientVisitDetail /></PatientProtectedRoute>} />
       <Route path="/patient/medications" element={<PatientProtectedRoute><PatientMedicationHistory /></PatientProtectedRoute>} />

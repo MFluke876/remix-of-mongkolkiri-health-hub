@@ -277,45 +277,30 @@ const Auth = () => {
                       สร้างบัญชีเพื่อเข้าถึงประวัติการรักษา
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handlePatientSignup} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="patient-signup-name">ชื่อ-นามสกุล</Label>
-                        <Input
-                          id="patient-signup-name"
-                          type="text"
-                          placeholder="ชื่อ นามสกุล"
-                          value={patientSignupForm.fullName}
-                          onChange={(e) => setPatientSignupForm({ ...patientSignupForm, fullName: e.target.value })}
-                          required
-                        />
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      การลงทะเบียนผู้ป่วยต้องกรอกข้อมูลส่วนตัวครบถ้วน
+                    </p>
+                    <Button 
+                      className="w-full" 
+                      onClick={() => navigate('/patient-signup')}
+                    >
+                      ลงทะเบียนผู้ป่วยใหม่
+                    </Button>
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="patient-signup-email">อีเมล</Label>
-                        <Input
-                          id="patient-signup-email"
-                          type="email"
-                          placeholder="your@email.com"
-                          value={patientSignupForm.email}
-                          onChange={(e) => setPatientSignupForm({ ...patientSignupForm, email: e.target.value })}
-                          required
-                        />
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">หรือ</span>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="patient-signup-password">รหัสผ่าน</Label>
-                        <Input
-                          id="patient-signup-password"
-                          type="password"
-                          placeholder="อย่างน้อย 6 ตัวอักษร"
-                          value={patientSignupForm.password}
-                          onChange={(e) => setPatientSignupForm({ ...patientSignupForm, password: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <Button type="submit" className="w-full" disabled={loading}>
-                        {loading ? 'กำลังลงทะเบียน...' : 'ลงทะเบียน'}
+                    </div>
+                    <p className="text-sm text-center text-muted-foreground">
+                      มี HN อยู่แล้ว?{' '}
+                      <Button variant="link" className="p-0 h-auto" onClick={() => navigate('/patient-link')}>
+                        เชื่อมโยงบัญชี
                       </Button>
-                    </form>
+                    </p>
                   </CardContent>
                 </Card>
               </TabsContent>
