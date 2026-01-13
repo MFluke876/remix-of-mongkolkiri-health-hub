@@ -1,8 +1,8 @@
 # Welcome to your Lovable project
 
-## Project info
+## Notion
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+**URL**: https://www.notion.so/Patient-medical-examination-2c8f3229603f814fb5f3cebd09dc4cf2
 
 ## How can I edit this code?
 
