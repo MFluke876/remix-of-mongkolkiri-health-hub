@@ -13,7 +13,6 @@ import PatientRegister from "./pages/PatientRegister";
 import Patients from "./pages/Patients";
 import Queue from "./pages/Queue";
 import NotFound from "./pages/NotFound";
-import PatientLinkPage from "./pages/PatientLinkPage";
 import PatientSignup from "./pages/PatientSignup";
 import PatientDashboard from "./pages/patient/PatientDashboard";
 import PatientProfile from "./pages/patient/PatientProfile";
@@ -73,7 +72,7 @@ const PatientProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!patientAccount) {
-    return <Navigate to="/patient-link" replace />;
+    return <Navigate to="/patient-signup" replace />;
   }
   
   return <>{children}</>;
@@ -94,7 +93,6 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/auth" element={user ? <Navigate to="/" replace /> : <Auth />} />
       <Route path="/patient-register" element={<PatientRegister />} />
-      <Route path="/patient-link" element={<PatientLinkPage />} />
       <Route path="/patient-signup" element={<PatientSignup />} />
       
       {/* Staff routes */}
