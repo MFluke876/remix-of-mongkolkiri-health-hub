@@ -287,20 +287,8 @@ const Auth = () => {
                     >
                       ลงทะเบียนผู้ป่วยใหม่
                     </Button>
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-card px-2 text-muted-foreground">หรือ</span>
-                      </div>
-                    </div>
-                    <p className="text-sm text-center text-muted-foreground">
-                      มี HN อยู่แล้ว?{' '}
-                      <Button variant="link" className="p-0 h-auto" onClick={() => navigate('/patient-link')}>
-                        เชื่อมโยงบัญชี
-                      </Button>
-                    </p>
+                    
+                    
                   </CardContent>
                 </Card>
               </TabsContent>
