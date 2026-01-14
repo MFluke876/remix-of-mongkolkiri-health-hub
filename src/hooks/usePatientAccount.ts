@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -62,51 +62,6 @@ export const useVerifyPatientForSignup = () => {
     },
     onError: (error: Error) => {
       toast.error('ไม่สามารถยืนยันตัวตนได้', { description: error.message });
-    }
-  });
-};
-
-export const useLinkPatientAccount = () => {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-
-  return useMutation({
-    mutationFn: async ({ nationalId }: { nationalId: string }) => {
-      if (!user) throw new Error('Not authenticated');
-
-      // Use secure RPC function to verify patient by national ID only
-      const { data: patientId, error: verifyError } = await supabase
-        .rpc('verify_patient_by_national_id', {
-          p_national_id: nationalId
-        });
-
-      if (verifyError) {
-        throw new Error(verifyError.message);
-      }
-
-      if (!patientId) {
-        throw new Error('ไม่พบข้อมูลผู้ป่วย กรุณาตรวจสอบเลขบัตรประชาชน');
-      }
-
-      // Create patient account link
-      const { data, error } = await supabase
-        .from('patient_accounts')
-        .insert({
-          user_id: user.id,
-          patient_id: patientId
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as PatientAccount;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['patient-account'] });
-      toast.success('เชื่อมโยงบัญชีสำเร็จ');
-    },
-    onError: (error: Error) => {
-      toast.error('เกิดข้อผิดพลาด', { description: error.message });
     }
   });
 };
