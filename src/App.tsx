@@ -16,6 +16,7 @@ import PatientSignup from "./pages/PatientSignup";
 import PatientDashboard from "./pages/patient/PatientDashboard";
 import PatientProfile from "./pages/patient/PatientProfile";
 import PatientMedicationHistory from "./pages/patient/PatientMedicationHistory";
+import PatientTreatmentHistory from "./pages/patient/PatientTreatmentHistory";
 import PatientDetail from "./pages/PatientDetail";
 
 const queryClient = new QueryClient();
@@ -101,6 +102,7 @@ const AppRoutes = () => {
       {/* Patient routes */}
       <Route path="/patient" element={<PatientProtectedRoute><PatientDashboard /></PatientProtectedRoute>} />
       <Route path="/patient/profile" element={<PatientProtectedRoute><PatientProfile /></PatientProtectedRoute>} />
+      <Route path="/patient/treatments" element={<PatientProtectedRoute><PatientTreatmentHistory /></PatientProtectedRoute>} />
       <Route path="/patient/medications" element={<PatientProtectedRoute><PatientMedicationHistory /></PatientProtectedRoute>} />
       
       <Route path="*" element={<NotFound />} />

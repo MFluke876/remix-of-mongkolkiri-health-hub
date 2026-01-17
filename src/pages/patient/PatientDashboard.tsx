@@ -4,7 +4,7 @@ import { usePatient } from "@/hooks/usePatients";
 import PatientLayout from "@/components/layout/PatientLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Pill, User } from "lucide-react";
+import { Pill, User, Stethoscope } from "lucide-react";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 
@@ -81,7 +81,22 @@ const PatientDashboard = () => {
         </Card>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card 
+            className="cursor-pointer hover:border-primary transition-colors"
+            onClick={() => navigate("/patient/treatments")}
+          >
+            <CardHeader className="flex flex-row items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Stethoscope className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">ประวัติการรักษา</CardTitle>
+                <CardDescription>ดูประวัติการวินิจฉัยและแผนการรักษา</CardDescription>
+              </div>
+            </CardHeader>
+          </Card>
+
           <Card 
             className="cursor-pointer hover:border-primary transition-colors"
             onClick={() => navigate("/patient/medications")}
