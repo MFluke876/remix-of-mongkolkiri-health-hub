@@ -9,7 +9,8 @@ import {
   LogOut,
   Menu,
   X,
-  User
+  User,
+  Stethoscope
 } from "lucide-react";
 
 interface PatientLayoutProps {
@@ -20,6 +21,7 @@ interface PatientLayoutProps {
 const navigation = [
   { name: "หน้าหลัก", href: "/patient", icon: Home },
   { name: "ข้อมูลส่วนตัว", href: "/patient/profile", icon: User },
+  { name: "ประวัติการรักษา", href: "/patient/treatments", icon: Stethoscope },
   { name: "ประวัติการรับยา", href: "/patient/medications", icon: Pill },
 ];
 
