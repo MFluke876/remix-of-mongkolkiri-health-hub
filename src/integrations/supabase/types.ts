@@ -108,6 +108,57 @@ export type Database = {
           },
         ]
       }
+      patient_consultations: {
+        Row: {
+          chief_complaint: string
+          consultation_date: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          notes: string | null
+          patient_id: string
+          physical_exam_note: string | null
+          vital_signs: Json | null
+        }
+        Insert: {
+          chief_complaint: string
+          consultation_date?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          patient_id: string
+          physical_exam_note?: string | null
+          vital_signs?: Json | null
+        }
+        Update: {
+          chief_complaint?: string
+          consultation_date?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          physical_exam_note?: string | null
+          vital_signs?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_consultations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_consultations_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_diagnoses: {
         Row: {
           created_at: string | null

@@ -24,11 +24,13 @@ import {
   ClipboardList,
   Stethoscope,
   Pill,
-  Plus
+  Plus,
+  FileText
 } from 'lucide-react';
 import { differenceInYears, format } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { usePatientDiagnoses, useCreatePatientDiagnosis } from '@/hooks/usePatientDiagnoses';
+import { usePatientConsultations, useCreatePatientConsultation } from '@/hooks/usePatientConsultations';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface PatientWithVisits {
@@ -74,11 +76,26 @@ const PatientDetail = () => {
   
   // Dialog state
   const [diagnosisDialogOpen, setDiagnosisDialogOpen] = useState(false);
+  const [consultationDialogOpen, setConsultationDialogOpen] = useState(false);
   const [newDiagnosis, setNewDiagnosis] = useState({
     diagnosis_date: format(new Date(), 'yyyy-MM-dd'),
     icd10_code: '',
     description: '',
     diagnosis_type: 'primary',
+    notes: ''
+  });
+  const [newConsultation, setNewConsultation] = useState({
+    consultation_date: format(new Date(), 'yyyy-MM-dd'),
+    chief_complaint: '',
+    physical_exam_note: '',
+    vital_signs: {
+      blood_pressure: '',
+      heart_rate: '',
+      temperature: '',
+      respiratory_rate: '',
+      weight: '',
+      height: ''
+    },
     notes: ''
   });
 
@@ -113,6 +130,10 @@ const PatientDetail = () => {
   const { data: patientDiagnoses = [], isLoading: diagnosesLoading } = usePatientDiagnoses(patientId || '');
   const createDiagnosis = useCreatePatientDiagnosis();
 
+  // Fetch patient consultations
+  const { data: patientConsultations = [], isLoading: consultationsLoading } = usePatientConsultations(patientId || '');
+  const createConsultation = useCreatePatientConsultation();
+
   const handleAddDiagnosis = async () => {
     if (!patientId || !newDiagnosis.icd10_code.trim()) return;
     
@@ -135,6 +156,45 @@ const PatientDetail = () => {
       notes: ''
     });
     setDiagnosisDialogOpen(false);
+  };
+
+  const handleAddConsultation = async () => {
+    if (!patientId || !newConsultation.chief_complaint.trim()) return;
+    
+    // Filter out empty vital signs
+    const filteredVitalSigns: Record<string, string | number> = {};
+    Object.entries(newConsultation.vital_signs).forEach(([key, value]) => {
+      if (value && String(value).trim()) {
+        filteredVitalSigns[key] = String(value).trim();
+      }
+    });
+
+    await createConsultation.mutateAsync({
+      patient_id: patientId,
+      consultation_date: newConsultation.consultation_date,
+      chief_complaint: newConsultation.chief_complaint.trim(),
+      physical_exam_note: newConsultation.physical_exam_note.trim() || undefined,
+      vital_signs: Object.keys(filteredVitalSigns).length > 0 ? filteredVitalSigns : undefined,
+      notes: newConsultation.notes.trim() || undefined,
+      created_by: user?.id
+    });
+    
+    // Reset form and close dialog
+    setNewConsultation({
+      consultation_date: format(new Date(), 'yyyy-MM-dd'),
+      chief_complaint: '',
+      physical_exam_note: '',
+      vital_signs: {
+        blood_pressure: '',
+        heart_rate: '',
+        temperature: '',
+        respiratory_rate: '',
+        weight: '',
+        height: ''
+      },
+      notes: ''
+    });
+    setConsultationDialogOpen(false);
   };
 
   if (isLoading) {
@@ -261,21 +321,97 @@ const PatientDetail = () => {
         </Card>
 
         {/* Tabs for Medical History */}
-        <Tabs defaultValue="diagnoses" className="space-y-4">
-          <TabsList className="grid grid-cols-3 w-full max-w-md">
+        <Tabs defaultValue="consultations" className="space-y-4">
+          <TabsList className="grid grid-cols-4 w-full max-w-xl">
+            <TabsTrigger value="consultations" className="gap-1">
+              <FileText className="h-4 w-4" />
+              บันทึกอาการ
+            </TabsTrigger>
             <TabsTrigger value="diagnoses" className="gap-1">
               <Stethoscope className="h-4 w-4" />
               ประวัติการวินิจฉัย
             </TabsTrigger>
             <TabsTrigger value="visits" className="gap-1">
               <ClipboardList className="h-4 w-4" />
-              ประวัติการเข้ารับบริการ
+              ประวัติเข้ารับบริการ
             </TabsTrigger>
             <TabsTrigger value="medications" className="gap-1">
               <Pill className="h-4 w-4" />
               ประวัติการรับยา
             </TabsTrigger>
           </TabsList>
+
+          {/* Consultation History - Chief Complaint Tab */}
+          <TabsContent value="consultations">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-lg">บันทึกอาการ ({patientConsultations.length} รายการ)</CardTitle>
+                <Button onClick={() => setConsultationDialogOpen(true)} size="sm" className="gap-1">
+                  <Plus className="h-4 w-4" />
+                  เพิ่มบันทึกอาการ
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {consultationsLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                ) : patientConsultations.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">ยังไม่มีบันทึกอาการ</p>
+                ) : (
+                  <div className="space-y-3">
+                    {patientConsultations.map((consultation) => (
+                      <div key={consultation.id} className="p-4 rounded-lg border bg-card">
+                        <div className="flex items-center justify-between mb-2">
+                          <Badge variant="outline">
+                            {format(new Date(consultation.consultation_date), 'd MMM yyyy', { locale: th })}
+                          </Badge>
+                        </div>
+                        <div className="space-y-2">
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">อาการหลัก: </span>
+                            <span className="text-sm">{consultation.chief_complaint}</span>
+                          </div>
+                          {consultation.vital_signs && Object.keys(consultation.vital_signs).length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {consultation.vital_signs.blood_pressure && (
+                                <Badge variant="secondary" className="text-xs">BP: {String(consultation.vital_signs.blood_pressure)}</Badge>
+                              )}
+                              {consultation.vital_signs.heart_rate && (
+                                <Badge variant="secondary" className="text-xs">HR: {String(consultation.vital_signs.heart_rate)}</Badge>
+                              )}
+                              {consultation.vital_signs.temperature && (
+                                <Badge variant="secondary" className="text-xs">Temp: {String(consultation.vital_signs.temperature)}°C</Badge>
+                              )}
+                              {consultation.vital_signs.respiratory_rate && (
+                                <Badge variant="secondary" className="text-xs">RR: {String(consultation.vital_signs.respiratory_rate)}</Badge>
+                              )}
+                              {consultation.vital_signs.weight && (
+                                <Badge variant="secondary" className="text-xs">น้ำหนัก: {String(consultation.vital_signs.weight)} kg</Badge>
+                              )}
+                            </div>
+                          )}
+                          {consultation.physical_exam_note && (
+                            <div>
+                              <span className="text-sm font-medium text-muted-foreground">ตรวจร่างกาย: </span>
+                              <span className="text-sm">{consultation.physical_exam_note}</span>
+                            </div>
+                          )}
+                          {consultation.notes && (
+                            <div>
+                              <span className="text-sm font-medium text-muted-foreground">หมายเหตุ: </span>
+                              <span className="text-sm text-muted-foreground">{consultation.notes}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Diagnosis History - Now uses standalone patient_diagnoses table */}
           <TabsContent value="diagnoses">
@@ -475,6 +611,147 @@ const PatientDetail = () => {
                 disabled={!newDiagnosis.icd10_code.trim() || createDiagnosis.isPending}
               >
                 {createDiagnosis.isPending ? 'กำลังบันทึก...' : 'บันทึก'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Consultation Dialog */}
+        <Dialog open={consultationDialogOpen} onOpenChange={setConsultationDialogOpen}>
+          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>เพิ่มบันทึกอาการใหม่</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="consultation_date">วันที่ตรวจ</Label>
+                <Input
+                  id="consultation_date"
+                  type="date"
+                  value={newConsultation.consultation_date}
+                  onChange={(e) => setNewConsultation(prev => ({ ...prev, consultation_date: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="chief_complaint">อาการหลัก (Chief Complaint) *</Label>
+                <Textarea
+                  id="chief_complaint"
+                  placeholder="เช่น ปวดหัว เวียนศีรษะ 3 วัน"
+                  value={newConsultation.chief_complaint}
+                  onChange={(e) => setNewConsultation(prev => ({ ...prev, chief_complaint: e.target.value }))}
+                  rows={2}
+                />
+              </div>
+              
+              {/* Vital Signs */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Vital Signs</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="blood_pressure" className="text-xs text-muted-foreground">ความดันโลหิต (BP)</Label>
+                    <Input
+                      id="blood_pressure"
+                      placeholder="เช่น 120/80"
+                      value={newConsultation.vital_signs.blood_pressure}
+                      onChange={(e) => setNewConsultation(prev => ({ 
+                        ...prev, 
+                        vital_signs: { ...prev.vital_signs, blood_pressure: e.target.value }
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="heart_rate" className="text-xs text-muted-foreground">ชีพจร (HR)</Label>
+                    <Input
+                      id="heart_rate"
+                      placeholder="เช่น 80"
+                      value={newConsultation.vital_signs.heart_rate}
+                      onChange={(e) => setNewConsultation(prev => ({ 
+                        ...prev, 
+                        vital_signs: { ...prev.vital_signs, heart_rate: e.target.value }
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="temperature" className="text-xs text-muted-foreground">อุณหภูมิ (°C)</Label>
+                    <Input
+                      id="temperature"
+                      placeholder="เช่น 36.5"
+                      value={newConsultation.vital_signs.temperature}
+                      onChange={(e) => setNewConsultation(prev => ({ 
+                        ...prev, 
+                        vital_signs: { ...prev.vital_signs, temperature: e.target.value }
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="respiratory_rate" className="text-xs text-muted-foreground">อัตราหายใจ (RR)</Label>
+                    <Input
+                      id="respiratory_rate"
+                      placeholder="เช่น 18"
+                      value={newConsultation.vital_signs.respiratory_rate}
+                      onChange={(e) => setNewConsultation(prev => ({ 
+                        ...prev, 
+                        vital_signs: { ...prev.vital_signs, respiratory_rate: e.target.value }
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="weight" className="text-xs text-muted-foreground">น้ำหนัก (kg)</Label>
+                    <Input
+                      id="weight"
+                      placeholder="เช่น 65"
+                      value={newConsultation.vital_signs.weight}
+                      onChange={(e) => setNewConsultation(prev => ({ 
+                        ...prev, 
+                        vital_signs: { ...prev.vital_signs, weight: e.target.value }
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="height" className="text-xs text-muted-foreground">ส่วนสูง (cm)</Label>
+                    <Input
+                      id="height"
+                      placeholder="เช่น 170"
+                      value={newConsultation.vital_signs.height}
+                      onChange={(e) => setNewConsultation(prev => ({ 
+                        ...prev, 
+                        vital_signs: { ...prev.vital_signs, height: e.target.value }
+                      }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="physical_exam_note">บันทึกการตรวจร่างกาย</Label>
+                <Textarea
+                  id="physical_exam_note"
+                  placeholder="ผลการตรวจร่างกาย..."
+                  value={newConsultation.physical_exam_note}
+                  onChange={(e) => setNewConsultation(prev => ({ ...prev, physical_exam_note: e.target.value }))}
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="consultation_notes">หมายเหตุ</Label>
+                <Textarea
+                  id="consultation_notes"
+                  placeholder="หมายเหตุเพิ่มเติม..."
+                  value={newConsultation.notes}
+                  onChange={(e) => setNewConsultation(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={2}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConsultationDialogOpen(false)}>
+                ยกเลิก
+              </Button>
+              <Button 
+                onClick={handleAddConsultation} 
+                disabled={!newConsultation.chief_complaint.trim() || createConsultation.isPending}
+              >
+                {createConsultation.isPending ? 'กำลังบันทึก...' : 'บันทึก'}
               </Button>
             </DialogFooter>
           </DialogContent>
