@@ -1,12 +1,13 @@
 import { usePatientAccount } from "@/hooks/usePatientAccount";
 import { usePatientDiagnoses } from "@/hooks/usePatientDiagnoses";
 import { usePatientTreatmentPlans } from "@/hooks/usePatientTreatmentPlans";
+import { usePatientConsultations } from "@/hooks/usePatientConsultations";
 import PatientLayout from "@/components/layout/PatientLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Stethoscope, ClipboardList, Calendar, FileText, AlertCircle } from "lucide-react";
+import { Stethoscope, ClipboardList, Calendar, FileText, AlertCircle, HeartPulse } from "lucide-react";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 
@@ -16,8 +17,9 @@ const PatientTreatmentHistory = () => {
   
   const { data: diagnoses, isLoading: diagnosesLoading } = usePatientDiagnoses(patientId);
   const { data: treatmentPlans, isLoading: plansLoading } = usePatientTreatmentPlans(patientId);
+  const { data: consultations, isLoading: consultationsLoading } = usePatientConsultations(patientId);
 
-  const isLoading = accountLoading || diagnosesLoading || plansLoading;
+  const isLoading = accountLoading || diagnosesLoading || plansLoading || consultationsLoading;
 
   if (isLoading) {
     return (
@@ -45,8 +47,12 @@ const PatientTreatmentHistory = () => {
   return (
     <PatientLayout title="ประวัติการรักษา">
       <div className="space-y-6">
-        <Tabs defaultValue="diagnoses" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="consultations" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="consultations" className="flex items-center gap-2">
+              <HeartPulse className="h-4 w-4" />
+              บันทึกอาการ ({consultations?.length || 0})
+            </TabsTrigger>
             <TabsTrigger value="diagnoses" className="flex items-center gap-2">
               <Stethoscope className="h-4 w-4" />
               การวินิจฉัย ({diagnoses?.length || 0})
@@ -56,6 +62,80 @@ const PatientTreatmentHistory = () => {
               แผนการรักษา ({treatmentPlans?.length || 0})
             </TabsTrigger>
           </TabsList>
+
+          {/* Consultations Tab - Chief Complaints */}
+          <TabsContent value="consultations" className="space-y-4 mt-4">
+            {consultations && consultations.length > 0 ? (
+              consultations.map((consultation) => (
+                <Card key={consultation.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                        <HeartPulse className="h-5 w-5 text-blue-500" />
+                      </div>
+                      <div className="flex-1">
+                        <CardTitle className="text-lg">บันทึกอาการ</CardTitle>
+                        <CardDescription>
+                          {format(new Date(consultation.consultation_date), "d MMMM yyyy", { locale: th })}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <h4 className="text-sm font-medium mb-1">อาการหลัก</h4>
+                      <p className="text-sm">{consultation.chief_complaint}</p>
+                    </div>
+                    {consultation.vital_signs && Object.keys(consultation.vital_signs).length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Vital Signs</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {consultation.vital_signs.blood_pressure && (
+                            <Badge variant="outline" className="text-xs">BP: {String(consultation.vital_signs.blood_pressure)}</Badge>
+                          )}
+                          {consultation.vital_signs.heart_rate && (
+                            <Badge variant="outline" className="text-xs">HR: {String(consultation.vital_signs.heart_rate)}</Badge>
+                          )}
+                          {consultation.vital_signs.temperature && (
+                            <Badge variant="outline" className="text-xs">Temp: {String(consultation.vital_signs.temperature)}°C</Badge>
+                          )}
+                          {consultation.vital_signs.respiratory_rate && (
+                            <Badge variant="outline" className="text-xs">RR: {String(consultation.vital_signs.respiratory_rate)}</Badge>
+                          )}
+                          {consultation.vital_signs.weight && (
+                            <Badge variant="outline" className="text-xs">น้ำหนัก: {String(consultation.vital_signs.weight)} kg</Badge>
+                          )}
+                          {consultation.vital_signs.height && (
+                            <Badge variant="outline" className="text-xs">ส่วนสูง: {String(consultation.vital_signs.height)} cm</Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {consultation.physical_exam_note && (
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">บันทึกการตรวจร่างกาย</h4>
+                        <p className="text-sm text-muted-foreground">{consultation.physical_exam_note}</p>
+                      </div>
+                    )}
+                    {consultation.notes && (
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">หมายเหตุ</h4>
+                        <p className="text-sm text-muted-foreground">{consultation.notes}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                  <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium">ไม่มีบันทึกอาการ</h3>
+                  <p className="text-muted-foreground">ยังไม่มีข้อมูลบันทึกอาการในระบบ</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
           {/* Diagnoses Tab */}
           <TabsContent value="diagnoses" className="space-y-4 mt-4">
