@@ -210,6 +210,63 @@ export type Database = {
           },
         ]
       }
+      patient_treatment_plans: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          duration: string | null
+          follow_up_date: string | null
+          id: string
+          notes: string | null
+          patient_id: string
+          plan_date: string
+          step: number
+          step_details: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          duration?: string | null
+          follow_up_date?: string | null
+          id?: string
+          notes?: string | null
+          patient_id: string
+          plan_date?: string
+          step: number
+          step_details: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          duration?: string | null
+          follow_up_date?: string | null
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          plan_date?: string
+          step?: number
+          step_details?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_treatment_plans_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_treatment_plans_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           address: string | null

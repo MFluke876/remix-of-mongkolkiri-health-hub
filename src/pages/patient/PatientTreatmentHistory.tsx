@@ -1,6 +1,6 @@
 import { usePatientAccount } from "@/hooks/usePatientAccount";
 import { usePatientDiagnoses } from "@/hooks/usePatientDiagnoses";
-import { usePatientTreatmentPlans } from "@/hooks/usePatientTreatmentPlans";
+import { usePatientTreatmentPlansNew, getStepInfo } from "@/hooks/usePatientTreatmentPlansNew";
 import { usePatientConsultations } from "@/hooks/usePatientConsultations";
 import PatientLayout from "@/components/layout/PatientLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,7 @@ const PatientTreatmentHistory = () => {
   const patientId = patientAccount?.patient_id || "";
   
   const { data: diagnoses, isLoading: diagnosesLoading } = usePatientDiagnoses(patientId);
-  const { data: treatmentPlans, isLoading: plansLoading } = usePatientTreatmentPlans(patientId);
+  const { data: treatmentPlans, isLoading: plansLoading } = usePatientTreatmentPlansNew(patientId);
   const { data: consultations, isLoading: consultationsLoading } = usePatientConsultations(patientId);
 
   const isLoading = accountLoading || diagnosesLoading || plansLoading || consultationsLoading;
@@ -63,7 +63,7 @@ const PatientTreatmentHistory = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Consultations Tab - Chief Complaints */}
+          {/* Consultations Tab */}
           <TabsContent value="consultations" className="space-y-4 mt-4">
             {consultations && consultations.length > 0 ? (
               consultations.map((consultation) => (
@@ -188,51 +188,56 @@ const PatientTreatmentHistory = () => {
           {/* Treatment Plans Tab */}
           <TabsContent value="treatments" className="space-y-4 mt-4">
             {treatmentPlans && treatmentPlans.length > 0 ? (
-              treatmentPlans.map((plan) => (
-                <Card key={plan.id}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                        <ClipboardList className="h-5 w-5 text-green-500" />
-                      </div>
-                      <div className="flex-1">
-                        <CardTitle className="text-lg">แผนการรักษา</CardTitle>
-                        <CardDescription>
-                          วันที่เข้ารับบริการ: {format(new Date(plan.visit.visit_date), "d MMMM yyyy", { locale: th })}
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <h4 className="text-sm font-medium mb-1">รายละเอียด</h4>
-                      <p className="text-sm text-muted-foreground">{plan.plan_details}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-4 text-sm">
-                      {plan.duration && (
-                        <div>
-                          <span className="text-muted-foreground">ระยะเวลา: </span>
-                          <span className="font-medium">{plan.duration}</span>
+              treatmentPlans.map((plan) => {
+                const stepInfo = getStepInfo(plan.step);
+                return (
+                  <Card key={plan.id}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                          <ClipboardList className="h-5 w-5 text-green-500" />
                         </div>
-                      )}
-                      {plan.follow_up_date && (
-                        <div>
-                          <span className="text-muted-foreground">วันนัดติดตาม: </span>
-                          <span className="font-medium">
-                            {format(new Date(plan.follow_up_date), "d MMMM yyyy", { locale: th })}
-                          </span>
+                        <div className="flex-1">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Badge variant="default">ขั้นตอนที่ {plan.step}: {stepInfo.name}</Badge>
+                          </CardTitle>
+                          <CardDescription>
+                            {format(new Date(plan.plan_date), "d MMMM yyyy", { locale: th })} — {stepInfo.description}
+                          </CardDescription>
                         </div>
-                      )}
-                    </div>
-                    {plan.notes && (
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
                       <div>
-                        <h4 className="text-sm font-medium mb-1">หมายเหตุ</h4>
-                        <p className="text-sm text-muted-foreground">{plan.notes}</p>
+                        <h4 className="text-sm font-medium mb-1">รายละเอียด</h4>
+                        <p className="text-sm text-muted-foreground">{plan.step_details}</p>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))
+                      <div className="flex flex-wrap gap-4 text-sm">
+                        {plan.duration && (
+                          <div>
+                            <span className="text-muted-foreground">ระยะเวลา: </span>
+                            <span className="font-medium">{plan.duration}</span>
+                          </div>
+                        )}
+                        {plan.follow_up_date && (
+                          <div>
+                            <span className="text-muted-foreground">วันนัดติดตาม: </span>
+                            <span className="font-medium">
+                              {format(new Date(plan.follow_up_date), "d MMMM yyyy", { locale: th })}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      {plan.notes && (
+                        <div>
+                          <h4 className="text-sm font-medium mb-1">หมายเหตุ</h4>
+                          <p className="text-sm text-muted-foreground">{plan.notes}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })
             ) : (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12 text-center">
