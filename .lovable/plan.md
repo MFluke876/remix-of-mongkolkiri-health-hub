@@ -1,66 +1,36 @@
 
 
-## แผนสร้างระบบแผนการรักษา (Treatment Plan) สำหรับแพทย์
+## ลบข้อมูลทั้งหมดในฐานข้อมูล
 
 ### สิ่งที่จะทำ
 
-สร้างฟีเจอร์ "แผนการรักษา" ใหม่ในหน้ารายละเอียดผู้ป่วย โดยมี 5 ขั้นตอนการรักษาตามแพทย์แผนไทย:
+ลบข้อมูล (rows) ทั้งหมดออกจากทุกตาราง โดยคงโครงสร้างตาราง, RLS policies, triggers และ functions ไว้ตามเดิม
 
-| ขั้นตอน | ชื่อ | วัตถุประสงค์ |
-|---------|------|-------------|
-| 1 | รุ | ล้างสารพิษ ล้างสารเคมี |
-| 2 | ล้อม | ลดอาการแทรกของโรค |
-| 3 | แปรไข้ | ปรับสมดุลร่างกาย |
-| 4 | รักษา | รักษาโรค รักษาธาตุ |
-| 5 | บำรุง | บำรุงธาตุ บำรุงร่างกายให้แข็งแรง |
+### วิธีดำเนินการ
 
----
+ใช้ SQL migration เพื่อ TRUNCATE ทุกตารางพร้อมกัน:
 
-### 1. สร้างตารางฐานข้อมูลใหม่
+```text
+TRUNCATE TABLE
+  patient_treatment_plans,
+  patient_diagnoses,
+  patient_consultations,
+  diagnoses,
+  prescriptions,
+  procedure_orders,
+  treatment_plans,
+  visits,
+  patient_accounts,
+  user_roles,
+  patients,
+  medicines,
+  profiles
+CASCADE;
+```
 
-สร้างตาราง `patient_treatment_plans` ที่เก็บแผนการรักษาตาม 5 ขั้นตอน:
+### สิ่งที่ควรทราบ
 
-- `id`, `patient_id`, `plan_date`
-- `step` (1-5: รุ, ล้อม, แปรไข้, รักษา, บำรุง)
-- `step_details` (รายละเอียดของขั้นตอนนั้น)
-- `duration`, `follow_up_date`, `notes`
-- `created_by`, `created_at`, `updated_at`
-- RLS: Staff จัดการได้ทั้งหมด, ผู้ป่วยดูของตัวเองได้
-
-### 2. สร้าง Hook ใหม่
-
-สร้าง `src/hooks/usePatientTreatmentPlansNew.ts`:
-- ดึงข้อมูลแผนการรักษาของผู้ป่วย
-- สร้างแผนการรักษาใหม่
-- ลบแผนการรักษา
-
-### 3. เพิ่มแท็บ "แผนการรักษา" ในหน้ารายละเอียดผู้ป่วย
-
-เพิ่มแท็บที่ 5 ใน `PatientDetail.tsx`:
-- แสดงรายการแผนการรักษาที่มีอยู่ (จัดกลุ่มตามวันที่)
-- แต่ละรายการแสดง Badge ขั้นตอน (รุ/ล้อม/แปรไข้/รักษา/บำรุง) พร้อมรายละเอียด
-- ปุ่ม "เพิ่มแผนการรักษา" เปิด Dialog ฟอร์ม
-- ฟอร์มประกอบด้วย:
-  - วันที่วางแผน (default: วันนี้)
-  - เลือกขั้นตอน (dropdown: รุ, ล้อม, แปรไข้, รักษา, บำรุง)
-  - รายละเอียดขั้นตอน (textarea, required)
-  - ระยะเวลา (optional)
-  - วันนัดติดตาม (optional)
-  - หมายเหตุ (optional)
-
-### 4. อัปเดตหน้าประวัติการรักษาของผู้ป่วย
-
-อัปเดต `PatientTreatmentHistory.tsx` ให้ใช้ตารางใหม่แทนตารางเก่า
-
----
-
-### ไฟล์ที่จะเปลี่ยนแปลง
-
-| ไฟล์ | การเปลี่ยนแปลง |
-|------|----------------|
-| Migration SQL ใหม่ | สร้างตาราง `patient_treatment_plans` พร้อม RLS |
-| `src/hooks/usePatientTreatmentPlansNew.ts` | สร้างใหม่ - Hook สำหรับ CRUD |
-| `src/pages/PatientDetail.tsx` | เพิ่มแท็บแผนการรักษาพร้อม Dialog ฟอร์ม |
-| `src/pages/patient/PatientTreatmentHistory.tsx` | อัปเดตให้ใช้ตารางใหม่ |
-| `src/hooks/usePatientTreatmentPlans.ts` | อัปเดตให้ใช้ตารางใหม่ |
+- ข้อมูลใน auth.users จะยังคงอยู่ เนื่องจากไม่สามารถลบผ่าน migration ได้ (เป็น reserved schema)
+- หลังลบข้อมูลเสร็จ ให้ไปลบ users ใน Backend UI ด้วยตนเอง (Cloud > Authentication)
+- ไม่มีการเปลี่ยนแปลงไฟล์โค้ด เฉพาะ migration เพื่อลบข้อมูลเท่านั้น
 
