@@ -25,7 +25,8 @@ import {
   Stethoscope,
   Pill,
   Plus,
-  FileText
+  FileText,
+  Download
 } from 'lucide-react';
 import { differenceInYears, format } from 'date-fns';
 import { th } from 'date-fns/locale';
@@ -34,6 +35,7 @@ import { usePatientConsultations, useCreatePatientConsultation } from '@/hooks/u
 import { usePatientTreatmentPlansNew, useCreatePatientTreatmentPlan, TREATMENT_STEPS, getStepInfo } from '@/hooks/usePatientTreatmentPlansNew';
 import { useAuth } from '@/contexts/AuthContext';
 import { HeartPulse, Trash2 } from 'lucide-react';
+import { exportPatientPdf } from '@/utils/exportPatientPdf';
 
 interface PatientWithVisits {
   id: string;
@@ -274,6 +276,24 @@ const PatientDetail = () => {
           <Button variant="ghost" onClick={() => navigate('/patients')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             กลับ
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => exportPatientPdf({
+              patient: {
+                ...patient,
+                allergies: patient.allergies || [],
+              },
+              consultations: patientConsultations,
+              diagnoses: patientDiagnoses,
+              treatmentPlans: patientTreatmentPlans,
+              visits: patient.visits,
+            })}
+          >
+            <Download className="h-4 w-4" />
+            ส่งออก PDF
           </Button>
         </div>
 
