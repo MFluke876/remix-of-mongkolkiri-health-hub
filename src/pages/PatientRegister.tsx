@@ -232,14 +232,18 @@ const PatientRegister = () => {
 
               {/* National ID */}
               <div className="space-y-2">
-                <Label htmlFor="nationalId">เลขบัตรประชาชน</Label>
+                <Label htmlFor="nationalId">เลขบัตรประชาชน *</Label>
                 <Input
                   id="nationalId"
                   placeholder="1234567890123"
                   maxLength={13}
                   value={form.nationalId}
                   onChange={(e) => setForm({ ...form, nationalId: e.target.value })}
+                  required
                 />
+                <p className="text-xs text-muted-foreground">
+                  จำเป็นสำหรับให้ผู้ป่วยยืนยันตัวตนตอนสมัครบัญชี
+                </p>
               </div>
 
               {/* DOB and Gender */}
@@ -274,14 +278,18 @@ const PatientRegister = () => {
 
               {/* Phone */}
               <div className="space-y-2">
-                <Label htmlFor="phone">เบอร์โทรศัพท์</Label>
+                <Label htmlFor="phone">เบอร์โทรศัพท์ *</Label>
                 <Input
                   id="phone"
                   type="tel"
                   placeholder="0812345678"
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  required
                 />
+                <p className="text-xs text-muted-foreground">
+                  จำเป็นสำหรับให้ผู้ป่วยยืนยันตัวตนตอนสมัครบัญชี
+                </p>
               </div>
 
               {/* Address */}
