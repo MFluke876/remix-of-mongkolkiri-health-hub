@@ -85,7 +85,7 @@ const PatientDetail = () => {
   const [consultationDialogOpen, setConsultationDialogOpen] = useState(false);
   const [prescriptionDialogOpen, setPrescriptionDialogOpen] = useState(false);
   const [newPrescription, setNewPrescription] = useState({
-    visit_id: '',
+    prescription_date: format(new Date(), 'yyyy-MM-dd'),
     medicine_id: '',
     quantity: 1,
     usage_instruction: ''
@@ -254,16 +254,18 @@ const PatientDetail = () => {
   };
 
   const handleAddPrescription = async () => {
-    if (!newPrescription.visit_id || !newPrescription.medicine_id || newPrescription.quantity < 1) return;
+    // Find visit matching the selected date
+    const matchingVisit = patient?.visits.find(v => v.visit_date === newPrescription.prescription_date);
+    if (!matchingVisit || !newPrescription.medicine_id || newPrescription.quantity < 1) return;
     
     await createPrescription.mutateAsync({
-      visit_id: newPrescription.visit_id,
+      visit_id: matchingVisit.id,
       medicine_id: newPrescription.medicine_id,
       quantity: newPrescription.quantity,
       usage_instruction: newPrescription.usage_instruction.trim() || undefined
     });
     
-    setNewPrescription({ visit_id: '', medicine_id: '', quantity: 1, usage_instruction: '' });
+    setNewPrescription({ prescription_date: format(new Date(), 'yyyy-MM-dd'), medicine_id: '', quantity: 1, usage_instruction: '' });
     setPrescriptionDialogOpen(false);
   };
 
@@ -1024,23 +1026,16 @@ const PatientDetail = () => {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label>เลือก Visit *</Label>
-                <Select
-                  value={newPrescription.visit_id}
-                  onValueChange={(value) => setNewPrescription(prev => ({ ...prev, visit_id: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="เลือกการเข้ารับบริการ" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {patient.visits.map((visit) => (
-                      <SelectItem key={visit.id} value={visit.id}>
-                        {format(new Date(visit.visit_date), 'd MMM yyyy', { locale: th })} - {visit.status}
-                        {visit.chief_complaint ? ` (${visit.chief_complaint})` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="rx_date">วันที่ *</Label>
+                <Input
+                  id="rx_date"
+                  type="date"
+                  value={newPrescription.prescription_date}
+                  onChange={(e) => setNewPrescription(prev => ({ ...prev, prescription_date: e.target.value }))}
+                />
+                {newPrescription.prescription_date && !patient.visits.find(v => v.visit_date === newPrescription.prescription_date) && (
+                  <p className="text-xs text-destructive">ไม่พบการเข้ารับบริการในวันที่เลือก</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>เลือกยา *</Label>
@@ -1087,7 +1082,7 @@ const PatientDetail = () => {
               </Button>
               <Button
                 onClick={handleAddPrescription}
-                disabled={!newPrescription.visit_id || !newPrescription.medicine_id || newPrescription.quantity < 1 || createPrescription.isPending}
+                disabled={!patient.visits.find(v => v.visit_date === newPrescription.prescription_date) || !newPrescription.medicine_id || newPrescription.quantity < 1 || createPrescription.isPending}
               >
                 {createPrescription.isPending ? 'กำลังบันทึก...' : 'บันทึก'}
               </Button>
