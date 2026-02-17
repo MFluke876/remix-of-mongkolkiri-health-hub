@@ -69,6 +69,7 @@ export const useCreatePrescription = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['prescriptions', variables.visit_id] });
+      queryClient.invalidateQueries({ queryKey: ['patient-detail'] });
       toast.success('บันทึกคำสั่งยาสำเร็จ');
     },
     onError: (error: Error) => {
@@ -92,6 +93,7 @@ export const useDeletePrescription = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['prescriptions', variables.visitId] });
+      queryClient.invalidateQueries({ queryKey: ['patient-detail'] });
       toast.success('ลบคำสั่งยาสำเร็จ');
     },
     onError: (error: Error) => {

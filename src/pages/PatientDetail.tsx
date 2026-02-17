@@ -33,6 +33,8 @@ import { th } from 'date-fns/locale';
 import { usePatientDiagnoses, useCreatePatientDiagnosis } from '@/hooks/usePatientDiagnoses';
 import { usePatientConsultations, useCreatePatientConsultation } from '@/hooks/usePatientConsultations';
 import { usePatientTreatmentPlansNew, useCreatePatientTreatmentPlan, TREATMENT_STEPS, getStepInfo } from '@/hooks/usePatientTreatmentPlansNew';
+import { useMedicines } from '@/hooks/useMedicines';
+import { useCreatePrescription, useDeletePrescription } from '@/hooks/usePrescriptions';
 import { useAuth } from '@/contexts/AuthContext';
 import { HeartPulse, Trash2 } from 'lucide-react';
 import { exportPatientPdf } from '@/utils/exportPatientPdf';
@@ -81,6 +83,13 @@ const PatientDetail = () => {
   // Dialog state
   const [diagnosisDialogOpen, setDiagnosisDialogOpen] = useState(false);
   const [consultationDialogOpen, setConsultationDialogOpen] = useState(false);
+  const [prescriptionDialogOpen, setPrescriptionDialogOpen] = useState(false);
+  const [newPrescription, setNewPrescription] = useState({
+    visit_id: '',
+    medicine_id: '',
+    quantity: 1,
+    usage_instruction: ''
+  });
   const [treatmentPlanDialogOpen, setTreatmentPlanDialogOpen] = useState(false);
   const [newTreatmentPlan, setNewTreatmentPlan] = useState({
     plan_date: format(new Date(), 'yyyy-MM-dd'),
@@ -146,6 +155,11 @@ const PatientDetail = () => {
   // Fetch patient consultations
   const { data: patientConsultations = [], isLoading: consultationsLoading } = usePatientConsultations(patientId || '');
   const createConsultation = useCreatePatientConsultation();
+
+  // Medicines & prescriptions
+  const { data: medicines = [] } = useMedicines();
+  const createPrescription = useCreatePrescription();
+  const deletePrescription = useDeletePrescription();
 
   // Fetch patient treatment plans (new table)
   const { data: patientTreatmentPlans = [], isLoading: treatmentPlansLoading } = usePatientTreatmentPlansNew(patientId || '');
@@ -237,6 +251,24 @@ const PatientDetail = () => {
       notes: ''
     });
     setTreatmentPlanDialogOpen(false);
+  };
+
+  const handleAddPrescription = async () => {
+    if (!newPrescription.visit_id || !newPrescription.medicine_id || newPrescription.quantity < 1) return;
+    
+    await createPrescription.mutateAsync({
+      visit_id: newPrescription.visit_id,
+      medicine_id: newPrescription.medicine_id,
+      quantity: newPrescription.quantity,
+      usage_instruction: newPrescription.usage_instruction.trim() || undefined
+    });
+    
+    setNewPrescription({ visit_id: '', medicine_id: '', quantity: 1, usage_instruction: '' });
+    setPrescriptionDialogOpen(false);
+  };
+
+  const handleDeletePrescription = async (prescriptionId: string, visitId: string) => {
+    await deletePrescription.mutateAsync({ id: prescriptionId, visitId });
   };
 
   if (isLoading) {
@@ -630,8 +662,12 @@ const PatientDetail = () => {
           {/* Medication History */}
           <TabsContent value="medications">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg">ประวัติการรับยา</CardTitle>
+                <Button onClick={() => setPrescriptionDialogOpen(true)} size="sm" className="gap-1">
+                  <Plus className="h-4 w-4" />
+                  เพิ่มคำสั่งยา
+                </Button>
               </CardHeader>
               <CardContent>
                 {patient.visits.every(v => v.prescriptions.length === 0) ? (
@@ -653,8 +689,18 @@ const PatientDetail = () => {
                                   <span className="text-muted-foreground text-sm ml-2">({p.medicine.name_english})</span>
                                 )}
                               </div>
-                              <div className="text-sm text-muted-foreground">
-                                {p.quantity} {p.usage_instruction && `- ${p.usage_instruction}`}
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm text-muted-foreground">
+                                  {p.quantity} {p.usage_instruction && `- ${p.usage_instruction}`}
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => handleDeletePrescription(p.id, visit.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
                             </div>
                           ))}
@@ -965,6 +1011,85 @@ const PatientDetail = () => {
                 disabled={!newTreatmentPlan.step_details.trim() || createTreatmentPlan.isPending}
               >
                 {createTreatmentPlan.isPending ? 'กำลังบันทึก...' : 'บันทึก'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Prescription Dialog */}
+        <Dialog open={prescriptionDialogOpen} onOpenChange={setPrescriptionDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>เพิ่มคำสั่งยา</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>เลือก Visit *</Label>
+                <Select
+                  value={newPrescription.visit_id}
+                  onValueChange={(value) => setNewPrescription(prev => ({ ...prev, visit_id: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกการเข้ารับบริการ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {patient.visits.map((visit) => (
+                      <SelectItem key={visit.id} value={visit.id}>
+                        {format(new Date(visit.visit_date), 'd MMM yyyy', { locale: th })} - {visit.status}
+                        {visit.chief_complaint ? ` (${visit.chief_complaint})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>เลือกยา *</Label>
+                <Select
+                  value={newPrescription.medicine_id}
+                  onValueChange={(value) => setNewPrescription(prev => ({ ...prev, medicine_id: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกยา" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {medicines.map((med) => (
+                      <SelectItem key={med.id} value={med.id}>
+                        {med.name_thai}{med.name_english ? ` (${med.name_english})` : ''} - คงเหลือ {med.stock_qty} {med.unit || ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="rx_quantity">จำนวน *</Label>
+                <Input
+                  id="rx_quantity"
+                  type="number"
+                  min={1}
+                  value={newPrescription.quantity}
+                  onChange={(e) => setNewPrescription(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="rx_usage">วิธีใช้ยา</Label>
+                <Textarea
+                  id="rx_usage"
+                  placeholder="เช่น รับประทานครั้งละ 1 เม็ด วันละ 3 ครั้ง หลังอาหาร"
+                  value={newPrescription.usage_instruction}
+                  onChange={(e) => setNewPrescription(prev => ({ ...prev, usage_instruction: e.target.value }))}
+                  rows={2}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPrescriptionDialogOpen(false)}>
+                ยกเลิก
+              </Button>
+              <Button
+                onClick={handleAddPrescription}
+                disabled={!newPrescription.visit_id || !newPrescription.medicine_id || newPrescription.quantity < 1 || createPrescription.isPending}
+              >
+                {createPrescription.isPending ? 'กำลังบันทึก...' : 'บันทึก'}
               </Button>
             </DialogFooter>
           </DialogContent>
