@@ -21,7 +21,6 @@ import {
   MapPin, 
   CreditCard, 
   AlertTriangle,
-  ClipboardList,
   Stethoscope,
   Pill,
   Plus,
@@ -39,7 +38,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { HeartPulse, Trash2 } from 'lucide-react';
 import { exportPatientPdf } from '@/utils/exportPatientPdf';
 
-interface PatientWithVisits {
+interface PatientInfo {
   id: string;
   hn: string;
   first_name: string;
@@ -51,28 +50,17 @@ interface PatientWithVisits {
   address: string | null;
   allergies: string[];
   created_at: string;
-  visits: {
-    id: string;
-    visit_date: string;
-    status: string;
-    chief_complaint: string | null;
-    queue_number: number | null;
-    prescriptions: {
-      id: string;
-      quantity: number;
-      usage_instruction: string | null;
-      medicine: {
-        name_thai: string;
-        name_english: string | null;
-      } | null;
-    }[];
-    treatment_plans: {
-      id: string;
-      plan_details: string;
-      duration: string | null;
-      follow_up_date: string | null;
-    }[];
-  }[];
+}
+
+interface PrescriptionRecord {
+  id: string;
+  prescription_date: string | null;
+  quantity: number;
+  usage_instruction: string | null;
+  medicine: {
+    name_thai: string;
+    name_english: string | null;
+  } | null;
 }
 
 const PatientDetail = () => {
@@ -126,24 +114,27 @@ const PatientDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('patients')
-        .select(`
-          *,
-          visits (
-            id,
-            visit_date,
-            status,
-            chief_complaint,
-            queue_number,
-            prescriptions (id, quantity, usage_instruction, medicine:medicines(name_thai, name_english)),
-            treatment_plans (id, plan_details, duration, follow_up_date)
-          )
-        `)
+        .select('*')
         .eq('id', patientId)
-        .order('visit_date', { referencedTable: 'visits', ascending: false })
         .single();
 
       if (error) throw error;
-      return data as PatientWithVisits;
+      return data as PatientInfo;
+    },
+    enabled: !!patientId
+  });
+
+  // Fetch prescriptions directly by patient_id
+  const { data: patientPrescriptions = [], isLoading: prescriptionsLoading } = useQuery({
+    queryKey: ['prescriptions', patientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('prescriptions')
+        .select('id, prescription_date, quantity, usage_instruction, medicine:medicines(name_thai, name_english)')
+        .eq('patient_id', patientId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as unknown as PrescriptionRecord[];
     },
     enabled: !!patientId
   });
@@ -254,12 +245,11 @@ const PatientDetail = () => {
   };
 
   const handleAddPrescription = async () => {
-    // Find visit matching the selected date
-    const matchingVisit = patient?.visits.find(v => v.visit_date === newPrescription.prescription_date);
-    if (!matchingVisit || !newPrescription.medicine_id || newPrescription.quantity < 1) return;
+    if (!patientId || !newPrescription.medicine_id || newPrescription.quantity < 1) return;
     
     await createPrescription.mutateAsync({
-      visit_id: matchingVisit.id,
+      patient_id: patientId,
+      prescription_date: newPrescription.prescription_date,
       medicine_id: newPrescription.medicine_id,
       quantity: newPrescription.quantity,
       usage_instruction: newPrescription.usage_instruction.trim() || undefined
@@ -269,8 +259,9 @@ const PatientDetail = () => {
     setPrescriptionDialogOpen(false);
   };
 
-  const handleDeletePrescription = async (prescriptionId: string, visitId: string) => {
-    await deletePrescription.mutateAsync({ id: prescriptionId, visitId });
+  const handleDeletePrescription = async (prescriptionId: string) => {
+    if (!patientId) return;
+    await deletePrescription.mutateAsync({ id: prescriptionId, patientId });
   };
 
   if (isLoading) {
@@ -323,7 +314,7 @@ const PatientDetail = () => {
               consultations: patientConsultations,
               diagnoses: patientDiagnoses,
               treatmentPlans: patientTreatmentPlans,
-              visits: patient.visits,
+              prescriptions: patientPrescriptions,
             })}
           >
             <Download className="h-4 w-4" />
@@ -416,7 +407,7 @@ const PatientDetail = () => {
 
         {/* Tabs for Medical History */}
         <Tabs defaultValue="consultations" className="space-y-4">
-          <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-4 w-full max-w-2xl">
             <TabsTrigger value="consultations" className="gap-1">
               <FileText className="h-4 w-4" />
               บันทึกอาการ
@@ -428,10 +419,6 @@ const PatientDetail = () => {
             <TabsTrigger value="treatment-plans" className="gap-1">
               <HeartPulse className="h-4 w-4" />
               แผนการรักษา
-            </TabsTrigger>
-            <TabsTrigger value="visits" className="gap-1">
-              <ClipboardList className="h-4 w-4" />
-              เข้ารับบริการ
             </TabsTrigger>
             <TabsTrigger value="medications" className="gap-1">
               <Pill className="h-4 w-4" />
@@ -511,7 +498,7 @@ const PatientDetail = () => {
             </Card>
           </TabsContent>
 
-          {/* Diagnosis History - Now uses standalone patient_diagnoses table */}
+          {/* Diagnosis History */}
           <TabsContent value="diagnoses">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -620,92 +607,51 @@ const PatientDetail = () => {
             </Card>
           </TabsContent>
 
-          {/* Visit History */}
-          <TabsContent value="visits">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">ประวัติการเข้ารับบริการ ({patient.visits.length} ครั้ง)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {patient.visits.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">ยังไม่มีประวัติการเข้ารับบริการ</p>
-                ) : (
-                  <div className="space-y-3">
-                    {patient.visits.map((visit) => (
-                      <div 
-                        key={visit.id} 
-                        className="p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
-                        onClick={() => navigate(`/visit/${visit.id}/consult`)}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">
-                              {format(new Date(visit.visit_date), 'd MMM yyyy', { locale: th })}
-                            </Badge>
-                            {visit.queue_number && (
-                              <Badge variant="secondary">คิว #{visit.queue_number}</Badge>
-                            )}
-                          </div>
-                          <Badge>{visit.status}</Badge>
-                        </div>
-                        {visit.chief_complaint && (
-                          <p className="text-sm text-muted-foreground">
-                            อาการ: {visit.chief_complaint}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           {/* Medication History */}
           <TabsContent value="medications">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg">ประวัติการรับยา</CardTitle>
+                <CardTitle className="text-lg">ประวัติการรับยา ({patientPrescriptions.length} รายการ)</CardTitle>
                 <Button onClick={() => setPrescriptionDialogOpen(true)} size="sm" className="gap-1">
                   <Plus className="h-4 w-4" />
                   เพิ่มคำสั่งยา
                 </Button>
               </CardHeader>
               <CardContent>
-                {patient.visits.every(v => v.prescriptions.length === 0) ? (
+                {prescriptionsLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                ) : patientPrescriptions.length === 0 ? (
                   <p className="text-muted-foreground text-center py-8">ยังไม่มีประวัติการรับยา</p>
                 ) : (
-                  <div className="space-y-4">
-                    {patient.visits.filter(v => v.prescriptions.length > 0).map((visit) => (
-                      <div key={visit.id} className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <Calendar className="h-4 w-4" />
-                          {format(new Date(visit.visit_date), 'd MMMM yyyy', { locale: th })}
+                  <div className="space-y-3">
+                    {patientPrescriptions.map((p) => (
+                      <div key={p.id} className="p-3 rounded-lg border bg-card flex items-center justify-between">
+                        <div>
+                          <span className="font-medium">{p.medicine?.name_thai || 'ไม่ระบุ'}</span>
+                          {p.medicine?.name_english && (
+                            <span className="text-muted-foreground text-sm ml-2">({p.medicine.name_english})</span>
+                          )}
+                          {p.prescription_date && (
+                            <span className="text-muted-foreground text-xs ml-2">
+                              {format(new Date(p.prescription_date), 'd MMM yyyy', { locale: th })}
+                            </span>
+                          )}
                         </div>
-                        <div className="pl-6 space-y-2">
-                          {visit.prescriptions.map((p) => (
-                            <div key={p.id} className="p-3 rounded-lg border bg-card flex items-center justify-between">
-                              <div>
-                                <span className="font-medium">{p.medicine?.name_thai || 'ไม่ระบุ'}</span>
-                                {p.medicine?.name_english && (
-                                  <span className="text-muted-foreground text-sm ml-2">({p.medicine.name_english})</span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <span className="text-sm text-muted-foreground">
-                                  {p.quantity} {p.usage_instruction && `- ${p.usage_instruction}`}
-                                </span>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive hover:text-destructive"
-                                  onClick={() => handleDeletePrescription(p.id, visit.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">
+                            {p.quantity} {p.usage_instruction && `- ${p.usage_instruction}`}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => handleDeletePrescription(p.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -1033,9 +979,6 @@ const PatientDetail = () => {
                   value={newPrescription.prescription_date}
                   onChange={(e) => setNewPrescription(prev => ({ ...prev, prescription_date: e.target.value }))}
                 />
-                {newPrescription.prescription_date && !patient.visits.find(v => v.visit_date === newPrescription.prescription_date) && (
-                  <p className="text-xs text-destructive">ไม่พบการเข้ารับบริการในวันที่เลือก</p>
-                )}
               </div>
               <div className="space-y-2">
                 <Label>เลือกยา *</Label>
@@ -1082,7 +1025,7 @@ const PatientDetail = () => {
               </Button>
               <Button
                 onClick={handleAddPrescription}
-                disabled={!patient.visits.find(v => v.visit_date === newPrescription.prescription_date) || !newPrescription.medicine_id || newPrescription.quantity < 1 || createPrescription.isPending}
+                disabled={!newPrescription.prescription_date || !newPrescription.medicine_id || newPrescription.quantity < 1 || createPrescription.isPending}
               >
                 {createPrescription.isPending ? 'กำลังบันทึก...' : 'บันทึก'}
               </Button>
