@@ -39,15 +39,14 @@ interface TreatmentPlanData {
   notes?: string | null;
 }
 
-interface VisitData {
-  visit_date: string;
-  status: string;
-  chief_complaint: string | null;
-  prescriptions: {
-    quantity: number;
-    usage_instruction: string | null;
-    medicine: { name_thai: string; name_english: string | null } | null;
-  }[];
+interface PrescriptionData {
+  prescription_date: string | null;
+  quantity: number;
+  usage_instruction: string | null;
+  medicine?: {
+    name_thai: string;
+    name_english: string | null;
+  } | null;
 }
 
 interface ExportOptions {
@@ -55,7 +54,7 @@ interface ExportOptions {
   consultations: ConsultationData[];
   diagnoses: DiagnosisData[];
   treatmentPlans: TreatmentPlanData[];
-  visits: VisitData[];
+  prescriptions: PrescriptionData[];
 }
 
 function formatDate(date: string) {
@@ -78,9 +77,18 @@ function differenceInYears(d1: Date, d2: Date) {
 }
 
 export function exportPatientPdf(options: ExportOptions) {
-  const { patient, consultations, diagnoses, treatmentPlans, visits } = options;
+  const { patient, consultations, diagnoses, treatmentPlans, prescriptions } = options;
   const age = differenceInYears(new Date(), new Date(patient.dob));
   const printDate = format(new Date(), 'd MMMM yyyy HH:mm', { locale: th });
+
+  // Group prescriptions by date
+  const groupedRx: Record<string, PrescriptionData[]> = {};
+  prescriptions.forEach(p => {
+    const date = p.prescription_date || 'ไม่ระบุวันที่';
+    if (!groupedRx[date]) groupedRx[date] = [];
+    groupedRx[date].push(p);
+  });
+  const rxDates = Object.keys(groupedRx).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
   const html = `<!DOCTYPE html>
 <html lang="th">
@@ -200,19 +208,20 @@ export function exportPatientPdf(options: ExportOptions) {
 
   <!-- Medication History -->
   <div class="section">
-    <div class="section-title">ประวัติการรับยา</div>
-    ${visits.filter(v => v.prescriptions.length > 0).length === 0 ? '<p class="empty">ไม่มีประวัติการรับยา</p>' : `
+    <div class="section-title">ประวัติการรับยา (${prescriptions.length} รายการ)</div>
+    ${prescriptions.length === 0 ? '<p class="empty">ไม่มีประวัติการรับยา</p>' : `
     <table>
       <thead><tr><th style="width:100px">วันที่</th><th>ชื่อยา</th><th>จำนวน</th><th>วิธีใช้</th></tr></thead>
       <tbody>
-        ${visits.filter(v => v.prescriptions.length > 0).flatMap(v =>
-          v.prescriptions.map((p, i) => `<tr>
-            ${i === 0 ? `<td rowspan="${v.prescriptions.length}">${formatDate(v.visit_date)}</td>` : ''}
+        ${rxDates.flatMap(date => {
+          const items = groupedRx[date];
+          return items.map((p, i) => `<tr>
+            ${i === 0 ? `<td rowspan="${items.length}">${date !== 'ไม่ระบุวันที่' ? formatDate(date) : date}</td>` : ''}
             <td>${p.medicine?.name_thai || '-'}${p.medicine?.name_english ? ` (${p.medicine.name_english})` : ''}</td>
             <td>${p.quantity}</td>
             <td>${p.usage_instruction || '-'}</td>
-          </tr>`)
-        ).join('')}
+          </tr>`);
+        }).join('')}
       </tbody>
     </table>`}
   </div>

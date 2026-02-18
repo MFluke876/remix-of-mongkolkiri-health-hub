@@ -8,10 +8,11 @@ import { Pill, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 
-interface MedicationWithVisit {
+interface MedicationRecord {
   id: string;
   quantity: number;
   usage_instruction: string | null;
+  prescription_date: string | null;
   created_at: string;
   medicine: {
     id: string;
@@ -19,10 +20,6 @@ interface MedicationWithVisit {
     name_english: string | null;
     unit: string | null;
     properties: string | null;
-  };
-  visit: {
-    id: string;
-    visit_date: string;
   };
 }
 
@@ -38,30 +35,30 @@ const PatientMedicationHistory = () => {
           id,
           quantity,
           usage_instruction,
+          prescription_date,
           created_at,
-          medicine:medicines(id, name_thai, name_english, unit, properties),
-          visit:visits!inner(id, visit_date, patient_id)
+          medicine:medicines(id, name_thai, name_english, unit, properties)
         `)
-        .eq('visit.patient_id', patientAccount?.patient_id)
+        .eq('patient_id', patientAccount?.patient_id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as unknown as MedicationWithVisit[];
+      return data as unknown as MedicationRecord[];
     },
     enabled: !!patientAccount?.patient_id
   });
 
   const isLoading = accountLoading || medicationsLoading;
 
-  // Group medications by visit date
+  // Group medications by prescription_date
   const groupedMedications = medications?.reduce((acc, med) => {
-    const date = med.visit.visit_date;
+    const date = med.prescription_date || med.created_at.split('T')[0];
     if (!acc[date]) {
       acc[date] = [];
     }
     acc[date].push(med);
     return acc;
-  }, {} as Record<string, MedicationWithVisit[]>) || {};
+  }, {} as Record<string, MedicationRecord[]>) || {};
 
   if (isLoading) {
     return (

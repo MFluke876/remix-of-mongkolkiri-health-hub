@@ -4,7 +4,9 @@ import { toast } from 'sonner';
 
 export interface Prescription {
   id: string;
-  visit_id: string;
+  patient_id: string | null;
+  prescription_date: string | null;
+  visit_id: string | null;
   medicine_id: string;
   quantity: number;
   usage_instruction: string | null;
@@ -18,15 +20,16 @@ export interface Prescription {
 }
 
 export interface CreatePrescriptionInput {
-  visit_id: string;
+  patient_id: string;
+  prescription_date: string;
   medicine_id: string;
   quantity: number;
   usage_instruction?: string;
 }
 
-export const usePrescriptions = (visitId?: string) => {
+export const usePrescriptions = (patientId?: string) => {
   return useQuery({
-    queryKey: ['prescriptions', visitId],
+    queryKey: ['prescriptions', patientId],
     queryFn: async () => {
       let query = supabase
         .from('prescriptions')
@@ -35,8 +38,8 @@ export const usePrescriptions = (visitId?: string) => {
           medicine:medicines(id, name_thai, name_english, unit)
         `);
       
-      if (visitId) {
-        query = query.eq('visit_id', visitId);
+      if (patientId) {
+        query = query.eq('patient_id', patientId);
       }
       
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -44,7 +47,7 @@ export const usePrescriptions = (visitId?: string) => {
       if (error) throw error;
       return data as Prescription[];
     },
-    enabled: visitId ? !!visitId : true
+    enabled: patientId ? !!patientId : true
   });
 };
 
@@ -56,11 +59,12 @@ export const useCreatePrescription = () => {
       const { data, error } = await supabase
         .from('prescriptions')
         .insert({
-          visit_id: input.visit_id,
+          patient_id: input.patient_id,
+          prescription_date: input.prescription_date,
           medicine_id: input.medicine_id,
           quantity: input.quantity,
           usage_instruction: input.usage_instruction || null
-        })
+        } as any)
         .select()
         .single();
 
@@ -68,8 +72,9 @@ export const useCreatePrescription = () => {
       return data as Prescription;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['prescriptions', variables.visit_id] });
+      queryClient.invalidateQueries({ queryKey: ['prescriptions', variables.patient_id] });
       queryClient.invalidateQueries({ queryKey: ['patient-detail'] });
+      queryClient.invalidateQueries({ queryKey: ['patient-medications'] });
       toast.success('บันทึกคำสั่งยาสำเร็จ');
     },
     onError: (error: Error) => {
@@ -82,18 +87,19 @@ export const useDeletePrescription = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, visitId }: { id: string; visitId: string }) => {
+    mutationFn: async ({ id, patientId }: { id: string; patientId: string }) => {
       const { error } = await supabase
         .from('prescriptions')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
-      return { id, visitId };
+      return { id, patientId };
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['prescriptions', variables.visitId] });
+      queryClient.invalidateQueries({ queryKey: ['prescriptions', variables.patientId] });
       queryClient.invalidateQueries({ queryKey: ['patient-detail'] });
+      queryClient.invalidateQueries({ queryKey: ['patient-medications'] });
       toast.success('ลบคำสั่งยาสำเร็จ');
     },
     onError: (error: Error) => {
