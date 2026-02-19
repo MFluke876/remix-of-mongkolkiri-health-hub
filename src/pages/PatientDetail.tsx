@@ -34,8 +34,9 @@ import { usePatientConsultations, useCreatePatientConsultation } from '@/hooks/u
 import { usePatientTreatmentPlansNew, useCreatePatientTreatmentPlan, TREATMENT_STEPS, getStepInfo } from '@/hooks/usePatientTreatmentPlansNew';
 import { useMedicines } from '@/hooks/useMedicines';
 import { useCreatePrescription, useDeletePrescription } from '@/hooks/usePrescriptions';
+import { useProcedureOrders, useCreateProcedureOrder, useDeleteProcedureOrder } from '@/hooks/useProcedureOrders';
 import { useAuth } from '@/contexts/AuthContext';
-import { HeartPulse, Trash2 } from 'lucide-react';
+import { HeartPulse, Trash2, Scissors } from 'lucide-react';
 import { exportPatientPdf } from '@/utils/exportPatientPdf';
 
 interface PatientInfo {
@@ -77,6 +78,14 @@ const PatientDetail = () => {
     medicine_id: '',
     quantity: 1,
     usage_instruction: ''
+  });
+  const [procedureDialogOpen, setProcedureDialogOpen] = useState(false);
+  const [newProcedure, setNewProcedure] = useState({
+    procedure_date: format(new Date(), 'yyyy-MM-dd'),
+    procedure_name: '',
+    body_part: '',
+    notes: '',
+    status: 'completed'
   });
   const [treatmentPlanDialogOpen, setTreatmentPlanDialogOpen] = useState(false);
   const [newTreatmentPlan, setNewTreatmentPlan] = useState({
@@ -155,6 +164,11 @@ const PatientDetail = () => {
   // Fetch patient treatment plans (new table)
   const { data: patientTreatmentPlans = [], isLoading: treatmentPlansLoading } = usePatientTreatmentPlansNew(patientId || '');
   const createTreatmentPlan = useCreatePatientTreatmentPlan();
+
+  // Fetch procedure orders
+  const { data: procedureOrders = [], isLoading: proceduresLoading } = useProcedureOrders(patientId);
+  const createProcedure = useCreateProcedureOrder();
+  const deleteProcedure = useDeleteProcedureOrder();
 
   const handleAddDiagnosis = async () => {
     if (!patientId || !newDiagnosis.icd10_code.trim()) return;
@@ -262,6 +276,33 @@ const PatientDetail = () => {
   const handleDeletePrescription = async (prescriptionId: string) => {
     if (!patientId) return;
     await deletePrescription.mutateAsync({ id: prescriptionId, patientId });
+  };
+
+  const handleAddProcedure = async () => {
+    if (!patientId || !newProcedure.procedure_name.trim()) return;
+    
+    await createProcedure.mutateAsync({
+      patient_id: patientId,
+      procedure_date: newProcedure.procedure_date,
+      procedure_name: newProcedure.procedure_name.trim(),
+      body_part: newProcedure.body_part.trim() || undefined,
+      notes: newProcedure.notes.trim() || undefined,
+      status: newProcedure.status
+    });
+    
+    setNewProcedure({
+      procedure_date: format(new Date(), 'yyyy-MM-dd'),
+      procedure_name: '',
+      body_part: '',
+      notes: '',
+      status: 'completed'
+    });
+    setProcedureDialogOpen(false);
+  };
+
+  const handleDeleteProcedure = async (procedureId: string) => {
+    if (!patientId) return;
+    await deleteProcedure.mutateAsync({ id: procedureId, patientId });
   };
 
   if (isLoading) {
@@ -407,7 +448,7 @@ const PatientDetail = () => {
 
         {/* Tabs for Medical History */}
         <Tabs defaultValue="consultations" className="space-y-4">
-          <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-5 w-full max-w-3xl">
             <TabsTrigger value="consultations" className="gap-1">
               <FileText className="h-4 w-4" />
               บันทึกอาการ
@@ -419,6 +460,10 @@ const PatientDetail = () => {
             <TabsTrigger value="treatment-plans" className="gap-1">
               <HeartPulse className="h-4 w-4" />
               แผนการรักษา
+            </TabsTrigger>
+            <TabsTrigger value="procedures" className="gap-1">
+              <Scissors className="h-4 w-4" />
+              หัตถการ
             </TabsTrigger>
             <TabsTrigger value="medications" className="gap-1">
               <Pill className="h-4 w-4" />
@@ -601,6 +646,61 @@ const PatientDetail = () => {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Procedure Orders Tab */}
+          <TabsContent value="procedures">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-lg">บันทึกหัตถการ ({procedureOrders.length} รายการ)</CardTitle>
+                <Button onClick={() => setProcedureDialogOpen(true)} size="sm" className="gap-1">
+                  <Plus className="h-4 w-4" />
+                  เพิ่มหัตถการ
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {proceduresLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                ) : procedureOrders.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">ยังไม่มีบันทึกหัตถการ</p>
+                ) : (
+                  <div className="space-y-3">
+                    {procedureOrders.map((proc) => (
+                      <div key={proc.id} className="p-3 rounded-lg border bg-card flex items-center justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{proc.procedure_name}</span>
+                            <Badge variant={proc.status === 'completed' ? 'default' : proc.status === 'cancelled' ? 'destructive' : 'secondary'}>
+                              {proc.status === 'completed' ? 'เสร็จสิ้น' : proc.status === 'cancelled' ? 'ยกเลิก' : 'รอดำเนินการ'}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                            {proc.procedure_date && (
+                              <span>{format(new Date(proc.procedure_date), 'd MMM yyyy', { locale: th })}</span>
+                            )}
+                            {proc.body_part && <span>บริเวณ: {proc.body_part}</span>}
+                          </div>
+                          {proc.notes && (
+                            <p className="text-sm text-muted-foreground">หมายเหตุ: {proc.notes}</p>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteProcedure(proc.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
@@ -959,6 +1059,81 @@ const PatientDetail = () => {
                 disabled={!newTreatmentPlan.step_details.trim() || createTreatmentPlan.isPending}
               >
                 {createTreatmentPlan.isPending ? 'กำลังบันทึก...' : 'บันทึก'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Procedure Dialog */}
+        <Dialog open={procedureDialogOpen} onOpenChange={setProcedureDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>เพิ่มบันทึกหัตถการ</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="procedure_date">วันที่ทำหัตถการ</Label>
+                <Input
+                  id="procedure_date"
+                  type="date"
+                  value={newProcedure.procedure_date}
+                  onChange={(e) => setNewProcedure(prev => ({ ...prev, procedure_date: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="procedure_name">ชื่อหัตถการ *</Label>
+                <Input
+                  id="procedure_name"
+                  placeholder="เช่น เย็บแผล, ล้างแผล, ตัดไหม"
+                  value={newProcedure.procedure_name}
+                  onChange={(e) => setNewProcedure(prev => ({ ...prev, procedure_name: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="body_part">บริเวณที่ทำ</Label>
+                <Input
+                  id="body_part"
+                  placeholder="เช่น แขนซ้าย, หน้าผาก"
+                  value={newProcedure.body_part}
+                  onChange={(e) => setNewProcedure(prev => ({ ...prev, body_part: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="procedure_status">สถานะ</Label>
+                <Select
+                  value={newProcedure.status}
+                  onValueChange={(value) => setNewProcedure(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">รอดำเนินการ</SelectItem>
+                    <SelectItem value="completed">เสร็จสิ้น</SelectItem>
+                    <SelectItem value="cancelled">ยกเลิก</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="procedure_notes">หมายเหตุ</Label>
+                <Textarea
+                  id="procedure_notes"
+                  placeholder="หมายเหตุเพิ่มเติม..."
+                  value={newProcedure.notes}
+                  onChange={(e) => setNewProcedure(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setProcedureDialogOpen(false)}>
+                ยกเลิก
+              </Button>
+              <Button
+                onClick={handleAddProcedure}
+                disabled={!newProcedure.procedure_name.trim() || createProcedure.isPending}
+              >
+                {createProcedure.isPending ? 'กำลังบันทึก...' : 'บันทึก'}
               </Button>
             </DialogFooter>
           </DialogContent>

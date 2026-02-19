@@ -373,29 +373,42 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          patient_id: string | null
+          procedure_date: string | null
           procedure_name: string
           status: string | null
-          visit_id: string
+          visit_id: string | null
         }
         Insert: {
           body_part?: string | null
           created_at?: string
           id?: string
           notes?: string | null
+          patient_id?: string | null
+          procedure_date?: string | null
           procedure_name: string
           status?: string | null
-          visit_id: string
+          visit_id?: string | null
         }
         Update: {
           body_part?: string | null
           created_at?: string
           id?: string
           notes?: string | null
+          patient_id?: string | null
+          procedure_date?: string | null
           procedure_name?: string
           status?: string | null
-          visit_id?: string
+          visit_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "procedure_orders_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "procedure_orders_visit_id_fkey"
             columns: ["visit_id"]
