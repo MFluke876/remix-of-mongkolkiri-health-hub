@@ -4,7 +4,9 @@ import { toast } from 'sonner';
 
 export interface ProcedureOrder {
   id: string;
-  visit_id: string;
+  patient_id: string | null;
+  procedure_date: string | null;
+  visit_id: string | null;
   procedure_name: string;
   body_part: string | null;
   notes: string | null;
@@ -13,21 +15,22 @@ export interface ProcedureOrder {
 }
 
 export interface CreateProcedureOrderInput {
-  visit_id: string;
+  patient_id: string;
+  procedure_date: string;
   procedure_name: string;
   body_part?: string;
   notes?: string;
   status?: string;
 }
 
-export const useProcedureOrders = (visitId?: string) => {
+export const useProcedureOrders = (patientId?: string) => {
   return useQuery({
-    queryKey: ['procedure-orders', visitId],
+    queryKey: ['procedure-orders', patientId],
     queryFn: async () => {
       let query = supabase.from('procedure_orders').select('*');
       
-      if (visitId) {
-        query = query.eq('visit_id', visitId);
+      if (patientId) {
+        query = query.eq('patient_id', patientId);
       }
       
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -35,7 +38,7 @@ export const useProcedureOrders = (visitId?: string) => {
       if (error) throw error;
       return data as ProcedureOrder[];
     },
-    enabled: visitId ? !!visitId : true
+    enabled: patientId ? !!patientId : true
   });
 };
 
@@ -47,12 +50,13 @@ export const useCreateProcedureOrder = () => {
       const { data, error } = await supabase
         .from('procedure_orders')
         .insert({
-          visit_id: input.visit_id,
+          patient_id: input.patient_id,
+          procedure_date: input.procedure_date,
           procedure_name: input.procedure_name,
           body_part: input.body_part || null,
           notes: input.notes || null,
           status: input.status || 'pending'
-        })
+        } as any)
         .select()
         .single();
 
@@ -60,33 +64,8 @@ export const useCreateProcedureOrder = () => {
       return data as ProcedureOrder;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['procedure-orders', variables.visit_id] });
+      queryClient.invalidateQueries({ queryKey: ['procedure-orders', variables.patient_id] });
       toast.success('บันทึกหัตถการสำเร็จ');
-    },
-    onError: (error: Error) => {
-      toast.error('เกิดข้อผิดพลาด', { description: error.message });
-    }
-  });
-};
-
-export const useUpdateProcedureStatus = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ id, status, visitId }: { id: string; status: string; visitId: string }) => {
-      const { data, error } = await supabase
-        .from('procedure_orders')
-        .update({ status })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return { data, visitId };
-    },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['procedure-orders', result.visitId] });
-      toast.success('อัพเดทสถานะหัตถการสำเร็จ');
     },
     onError: (error: Error) => {
       toast.error('เกิดข้อผิดพลาด', { description: error.message });
@@ -98,17 +77,17 @@ export const useDeleteProcedureOrder = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, visitId }: { id: string; visitId: string }) => {
+    mutationFn: async ({ id, patientId }: { id: string; patientId: string }) => {
       const { error } = await supabase
         .from('procedure_orders')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
-      return { id, visitId };
+      return { id, patientId };
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['procedure-orders', variables.visitId] });
+      queryClient.invalidateQueries({ queryKey: ['procedure-orders', variables.patientId] });
       toast.success('ลบหัตถการสำเร็จ');
     },
     onError: (error: Error) => {
